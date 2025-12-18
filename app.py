@@ -1,46 +1,53 @@
-from flask import Flask, request, send_file
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-import io
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import os
 
 app = Flask(__name__)
+CORS(app)
+
+@app.route("/")
+def home():
+    return jsonify({
+        "status": "ok",
+        "message": "Resume360 backend running"
+    })
 
 @app.route("/generate-resume", methods=["POST"])
 def generate_resume():
     data = request.json
+    return jsonify({
+        "resume": f"""
+{data.get('name', '')}
+{data.get('title', '')}
 
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
+Skills:
+{data.get('skills', '')}
 
-    text = c.beginText(40, 800)
-    text.setFont("Helvetica", 11)
+Experience:
+{data.get('experience', '')}
 
-    text.textLine(data.get("name", ""))
-    text.textLine(data.get("title", ""))
-    text.textLine("")
+Education:
+{data.get('education', '')}
+"""
+    })
 
-    text.textLine("Skills:")
-    text.textLine(data.get("skills", ""))
-    text.textLine("")
+@app.route("/generate-cover-letter", methods=["POST"])
+def generate_cover():
+    data = request.json
+    return jsonify({
+        "cover_letter": f"""
+Dear Hiring Manager,
 
-    text.textLine("Experience:")
-    text.textLine(data.get("experience", ""))
-    text.textLine("")
+My name is {data.get('name','')} and I am applying for the role of {data.get('job','')}.
 
-    text.textLine("Education:")
-    text.textLine(data.get("education", ""))
+Skills: {data.get('skills','')}
+Experience: {data.get('experience','')}
 
-    c.drawText(text)
-    c.showPage()
-    c.save()
-
-    buffer.seek(0)
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name="Resume360_Resume.pdf",
-        mimetype="application/pdf"
-    )
+Sincerely,
+{data.get('name','')}
+"""
+    })
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
